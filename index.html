@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Desafío TIC - Juego Completo</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-color: #f8fafc;
+            --accent-color: #38bdf8;
+            --success-color: #4ade80;
+            --error-color: #f87171;
+        }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 650px;
+            width: 100%;
+            background-color: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+        }
+        h1, h2 { text-align: center; color: var(--accent-color); margin-top: 0; }
+        .progress { text-align: right; font-weight: bold; margin-bottom: 20px; color: #94a3b8; font-size: 14px; }
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 14px 18px;
+            margin: 12px 0;
+            background-color: #334155;
+            color: white;
+            border: 2px solid #475569;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            text-align: left;
+        }
+        .btn:hover { background-color: #475569; border-color: var(--accent-color); }
+        .btn-start { text-align: center; background-color: var(--accent-color); color: #0f172a; font-weight: bold; border: none; }
+        .feedback { margin-top: 25px; padding: 15px; border-radius: 8px; display: none; font-weight: 500; line-height: 1.5; }
+        .correct { background-color: rgba(74, 222, 128, 0.15); border: 2px solid var(--success-color); }
+        .incorrect { background-color: rgba(248, 113, 113, 0.15); border: 2px solid var(--error-color); }
+        .hidden { display: none; }
+        .diagram-box {
+            background-color: #334155;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            margin: 15px 0;
+            font-family: monospace;
+            border: 1px dashed var(--accent-color);
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div id="start-screen">
+        <h1>🎮 Desafío TIC: El Juego</h1>
+        <p style="text-align: center; font-size: 16px; color: #94a3b8;">Ingeniería Informática | Universidad Columbia del Paraguay</p>
+        <p style="margin: 20px 0; line-height: 1.6;">Bienvenido al juego web interactivo. Deberás resolver los retos de aplicación práctica de la materia.</p>
+        <button class="btn btn-start" onclick="startGame()">Comenzar Desafío</button>
+    </div>
+    <div id="game-screen" class="hidden">
+        <div class="progress" id="progress-text">Reto 1</div>
+        <h2 id="question-text" style="font-size: 18px; text-align: left; line-height: 1.6;">Cargando...</h2>
+        <div id="diagram-container"></div>
+        <div id="options-container"></div>
+        <div id="feedback-box" class="feedback"></div>
+        <button id="next-btn" class="btn btn-start hidden" onclick="nextQuestion()">Siguiente Reto</button>
+    </div>
+    <div id="end-screen" class="hidden">
+        <h1>🏆 ¡Desafío Completado!</h1>
+        <p id="score-text" style="font-size: 18px; text-align: center; margin: 25px 0; line-height: 1.8;"></p>
+        <button class="btn btn-start" onclick="location.reload()">Volver a Jugar</button>
+    </div>
+</div>
+<script>
+    // Los datos y la lógica irán aquí abajo inmediatamente
+    const databaseRetos = [
+        {
+            unidad: "U1",
+            pregunta: "Al enviar un mensaje por WhatsApp, escribes el texto, la aplicación lo cifra, lo transmite por la red, y tu amigo lo recibe. ¿Cuál representa el PROCESO?",
+            opciones: ["El texto inicial ingresado.", "El cifrado matemático y el enrutamiento lógico.", "La visualización en la pantalla de destino."],
+            correcta: 1,
+            feedback: "¡Correcto! El cifrado constituye la transformación interna de datos."
+        },
+        {
+            unidad: "U2",
+            pregunta: "Una empresa necesita testear código en Linux Ubuntu, pero sus estaciones físicas operan con Windows 11. ¿Cuál es el enfoque más eficiente?",
+            opciones: ["Formatear por completo un equipo real.", "Implementar una Máquina Virtual con Linux usando un hipervisor.", "Ejecutar el archivo en un navegador web diferente."],
+            correcta: 1,
+            feedback: "¡Muy bien! La virtualización permite ejecutar entornos independientes de forma lógica sobre hardware físico."
+        },
+        {
+            unidad: "U3",
+            pregunta: "Requieres recuperar artículos académicos sobre Inteligencia Artificial aplicada a la Medicina, omitiendo estrictamente Cirugía. ¿Qué sintaxis booleana cumple esto?",
+            opciones: ["\"Inteligencia Artificial\" AND Medicina NOT Cirugía", "Inteligencia Artificial OR Medicina OR Cirugía", "\"Inteligencia Artificial\" + Medicina + Cirugía"],
+            correcta: 0,
+            feedback: "¡Exacto! El operador AND une condiciones y NOT restringe los términos no deseados."
+        },
+        {
+            unidad: "U4",
+            pregunta: "Estás consolidando notas en una planilla. Requieres calcular el promedio simple del rango de celdas desde B2 hasta B15. ¿Qué sintaxis aplicarías?",
+            opciones: ["=SUMA(B2:B15) / CONTAR.SI(B2:B15; \">0\")", "=PROMEDIO(B2:B15)", "=MAX(B2:B15) - MIN(B2:B15)"],
+            correcta: 1,
+            feedback: "¡Correcto! La función integrada =PROMEDIO() automatiza esta operación aritmética."
+        },
+        {
+            unidad: "U6",
+            pregunta: "En la nube compartida (Drive), tu compañero borró accidentalmente tres páginas vitales del marco teórico y guardó el archivo. ¿Cómo solucionas la pérdida?",
+            opciones: ["Volver a redactar toda la sección desde cero.", "Acceder al Historial de Versiones del archivo en la nube y restaurar el estado previo.", "Descargar el documento y cambiar de forma manual la extensión."],
+            correcta: 1,
+            feedback: "¡Correcto! La gestión de versiones permite auditar y revertir modificaciones erróneas."
+        },
+        {
+            unidad: "U7",
+            pregunta: "Diseñas un flujo lógico: Cliente solicita artículo -> Sistema valida existencias. ¿Qué elemento gráfico representa técnicamente la validación condicional?",
+            opciones: ["Un bloque rectangular regular de proceso.", "Un bloque con forma de Rombo que ramifique el flujo en Sí o No.", "Un círculo conector de fin."],
+            diagrama: "[Inicio] -> [Solicitar Artículo] -> ¿Hay Stock en BD? -> (Sí) -> [Fin]",
+            correcta: 1,
+            feedback: "¡Excelente! En flujogramas, los rombos simbolizan compuertas de decisión condicional."
+        },
+        {
+            unidad: "U9",
+            pregunta: "Parafraseas un concepto de Google Académico con tus propias palabras pero suprimes la cita porque 'ya no es copia textual'. ¿Qué evalúas de esta práctica?",
+            opciones: ["Es un uso aceptable ya que la redacción es propia.", "Constituye plagio académico; la propiedad intelectual pertenece al autor y exige cita APA.", "Es válido únicamente si se complementa con términos de IA."],
+            correcta: 1,
+            feedback: "¡Exacto! La ética exige atribuir el crédito intelectual a los creadores originales siempre."
+        }
+    ];
+
+    let currentQuestionIndex = 0;
+    let score = 0;
+    let answered = false;
+
+    function startGame() {
+        document.getElementById("start-screen").classList.add("hidden");
+        document.getElementById("game-screen").classList.remove("hidden");
+        showQuestion();
+    }
+
+    function showQuestion() {
+        answered = false;
+        document.getElementById("next-btn").classList.add("hidden");
+        const feedbackBox = document.getElementById("feedback-box");
+        feedbackBox.style.display = "none";
+        feedbackBox.className = "feedback";
+
+        const currentQuestion = databaseRetos[currentQuestionIndex];
+        document.getElementById("progress-text").innerText = `Unidad ${currentQuestion.unidad} | Reto ${currentQuestionIndex + 1} de ${databaseRetos.length}`;
+        document.getElementById("question-text").innerText = currentQuestion.pregunta;
+
+        const diagramContainer = document.getElementById("diagram-container");
+        if (currentQuestion.diagrama) {
+            diagramContainer.innerHTML = `<div class="diagram-box"><strong>DIAGRAMA:</strong><br>${currentQuestion.diagrama}</div>`;
+        } else {
+            diagramContainer.innerHTML = "";
+        }
+
+        const optionsContainer = document.getElementById("options-container");
+        optionsContainer.innerHTML = "";
+        currentQuestion.opciones.forEach((opcion, index) => {
+            const button = document.createElement("button");
+            button.className = "btn";
+            button.innerText = opcion;
+            button.onclick = () => checkAnswer(index);
+            optionsContainer.appendChild(button);
+        });
+    }
+
+    function checkAnswer(selectedIndex) {
+        if (answered) return;
+        answered = true;
+        const currentQuestion = databaseRetos[currentQuestionIndex];
+        const feedbackBox = document.getElementById("feedback-box");
+        const buttons = document.getElementById("options-container").children;
+
+        feedbackBox.style.display = "block";
+        feedbackBox.innerText = currentQuestion.feedback;
+
+        if (selectedIndex === currentQuestion.correcta) {
+            score++;
+            feedbackBox.classList.add("correct");
+            buttons[selectedIndex].style.borderColor = "var(--success-color)";
+        } else {
+            feedbackBox.classList.add("incorrect");
+            buttons[selectedIndex].style.borderColor = "var(--error-color)";
+            buttons[currentQuestion.correcta].style.borderColor = "var(--success-color)";
+        }
+        document.getElementById("next-btn").classList.remove("hidden");
+    }
+
+    function nextQuestion() {
+        currentQuestionIndex++;
+        if (currentQuestionIndex < databaseRetos.length) {
+            showQuestion();
+        } else {
+            const percentage = Math.round((score / databaseRetos.length) * 100);
+            document.getElementById("game-screen").classList.add("hidden");
+            document.getElementById("end-screen").classList.remove("hidden");
+            document.getElementById("score-text").innerHTML = `Aciertos: <strong>${score}</strong> de <strong>${databaseRetos.length}</strong>.<br>Logro: <strong>${percentage}%</strong>.`;
+        }
+    }
+</script>
+</body>
+</html>
